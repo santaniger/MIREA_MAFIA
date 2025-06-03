@@ -1,0 +1,26 @@
+version: '3.9'
+services:
+  bot:
+    container_name: bot
+    build: ./bot_service
+    depends_on:
+      - server
+    networks:
+      - app-network
+
+  server:
+    container_name: server
+    build: ./server_service
+    ports:
+      - "5000:5000"
+    volumes:
+      - bot_data:/app/server_service/mirea_mafia.db
+    networks:
+      - app-network
+
+networks:
+  app-network:
+
+volumes:
+  bot_data:
+  server_data:
