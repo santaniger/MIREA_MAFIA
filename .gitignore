@@ -4,3 +4,4 @@ server_service/mirea_mafia.db
 server_service/reg.py
 server_service/testrequests.py
 server_service/yyyyy.py
+bot_service/config.py

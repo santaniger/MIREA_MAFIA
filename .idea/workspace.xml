@@ -5,20 +5,7 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="547fba5e-31ea-4e55-b690-2e0f6b773ee3" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/.idea/MIREA_MAFIA.iml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/inspectionProfiles/Project_Default.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/inspectionProfiles/profiles_settings.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/modules.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/bot_service/Dockerfile" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/bot_service/bot.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/bot_service/config.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/docker-compose.yml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/server_service/Dockerfile" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/server_service/database.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/server_service/server.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/bot_service/config.py" beforeDir="false" afterPath="$PROJECT_DIR$/bot_service/config.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
