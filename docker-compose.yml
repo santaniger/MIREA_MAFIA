@@ -1,26 +1,26 @@
-version: '3.9'
-services:
-  bot:
-    container_name: bot
-    build: ./bot_service
-    depends_on:
-      - server
-    networks:
-      - app-network
+version: '3.8'
 
-  server:
-    container_name: server
-    build: ./server_service
+services:
+  api:
+    build:
+      context: ./server_service
+      dockerfile: Dockerfile
+    container_name: mafia-api
     ports:
       - "5000:5000"
     volumes:
-      - bot_data:/app/server_service/mirea_mafia.db
-    networks:
-      - app-network
+      - ./server_service/mirea_mafia.db:/app/server_service/mirea_mafia.db  # Для сохранения SQLite базы данных
+    environment:
+      - FLASK_ENV=production
 
-networks:
-  app-network:
+  bot:
+    build:
+      context: ./bot_service
+      dockerfile: Dockerfile
+    container_name: mafia-bot
+    volumes:
+      - ./bot_service/data:/app/bot_service/data  # Для сохранения состояний бота
 
 volumes:
+  db:
   bot_data:
-  server_data:

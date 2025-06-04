@@ -2,7 +2,7 @@ from flask import Flask, jsonify, request
 import database as DB
 
 app = Flask(__name__)
-
+DB.init_db()
 
 @app.route('/reg', methods=['POST'])
 def register_player():
@@ -258,5 +258,4 @@ def get_players_stats(game_type):
         return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
-    DB.init_db()
     app.run(debug=True, port=5000)

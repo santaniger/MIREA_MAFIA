@@ -2,7 +2,7 @@ import requests
 import telebot
 from telebot import types
 import random
-from config import *
+from config import BOT_TOKEN, BASE_URL
 from datetime import datetime, timedelta
 
 bot = telebot.TeleBot(BOT_TOKEN)
@@ -22,7 +22,7 @@ def format_date(iso_string):
     return f"{dt.day} {months[dt.month]} в {dt.strftime('%H:%M')}"
 
 def is_master(id):
-    response = requests.get(f"http://127.0.0.1:5000/players/{id}")
+    response = requests.get(f"{BASE_URL}/players/{id}")
     return response.json()["is_master"]
 
 @bot.callback_query_handler(func=lambda call: call.data == "main_menu")
@@ -30,8 +30,8 @@ def call_main_menu(call):
     main_menu(call.message, 1)
 
 def main_menu(message, is_call=0):
-    games_cnt = requests.get("http://127.0.0.1:5000/game/list").json()["count"]
-    regisrations_cnt = requests.get("http://127.0.0.1:5000/game/registrations", json={"player_id": message.chat.id}).json()["count"]
+    games_cnt = requests.get(f"{BASE_URL}/game/list").json()["count"]
+    regisrations_cnt = requests.get(f"{BASE_URL}/game/registrations", json={"player_id": message.chat.id}).json()["count"]
     keyboard = types.InlineKeyboardMarkup()
     keyboard.add(types.InlineKeyboardButton(text="Игры", callback_data="menu_games"), types.InlineKeyboardButton(text="Статистика", callback_data="stat"))
     if is_call:
@@ -42,7 +42,7 @@ def main_menu(message, is_call=0):
 @bot.message_handler(commands=["start"])
 def start_command(message):
     print("start")
-    response = requests.get(f"http://127.0.0.1:5000/players/{message.chat.id}")
+    response = requests.get(f"{BASE_URL}/players/{message.chat.id}")
     if (response.status_code // 100 == 2):
         print("OK")
         main_menu(message)
@@ -56,7 +56,7 @@ def get_name(message):
 
 def get_group(message, name):
     loading = bot.send_message(message.chat.id, "Регистрирую...")
-    response = requests.post("http://127.0.0.1:5000/reg", json={
+    response = requests.post(f"{BASE_URL}/reg", json={
         "ID": message.chat.id,
         "nickname": name,
         "username": message.from_user.username,
@@ -69,9 +69,9 @@ def get_group(message, name):
 
 @bot.callback_query_handler(func=lambda call: call.data == "menu_games")
 def cancel_handler(call):
-    response = requests.get("http://127.0.0.1:5000/game/list")
+    response = requests.get(f"{BASE_URL}/game/list")
     msg_str = "ИГРЫ:\n"
-    regisrations = [i["game_id"] for i in requests.get("http://127.0.0.1:5000/game/registrations", json={"player_id": call.message.chat.id}).json()["registrations"]]
+    regisrations = [i["game_id"] for i in requests.get(f"{BASE_URL}/game/registrations", json={"player_id": call.message.chat.id}).json()["registrations"]]
     keyboard = types.InlineKeyboardMarkup()
     for i in response.json()["games"]:
         msg_str += f"\nИГРА №{i['game_id']}------------------\nПройдёт {format_date(i['date'].replace(' ', 'T'))}\nТип игры: {'Классическая' if i['type'] == 'classic'  else 'Городская'}\nВедущий: Г-н(жа) {i['master_nickname']}\nАудитория: {i['room']}\nМакс кол-во игроков: {i['slots_cnt']}\nЗарегистрировано: {i['registrations']}\n"
@@ -94,8 +94,8 @@ def cancel_handler(call):
 @bot.callback_query_handler(func=lambda call: call.data.startswith("gameInfo_"))
 def game_info(call, edit=0):
     game_id = int(call.data.split('_')[1])
-    regisrations = [i["game_id"] for i in requests.get("http://127.0.0.1:5000/game/registrations", json={"player_id": call.message.chat.id}).json()["registrations"]]
-    i = requests.get(f"http://127.0.0.1:5000/game/{game_id}").json()
+    regisrations = [i["game_id"] for i in requests.get(f"{BASE_URL}/game/registrations", json={"player_id": call.message.chat.id}).json()["registrations"]]
+    i = requests.get(f"{BASE_URL}/game/{game_id}").json()
     msg_text = f"\nИГРА №{i['game_id']}------------------\nПройдёт {format_date(i['date'].replace(' ', 'T'))}\nТип игры: {'Классическая' if i['type'] == 'classic'  else 'Городская'}\nВедущий: Г-н(жа) {i['master_nickname']}\nАудитория: {i['room']}\nМакс кол-во игроков: {i['slots_cnt']}\nЗарегистрировано: {i['players_count']}\n{'Зарегистрированные игроки:' if i['players_count'] else 'Будь первым!'}\n"
     cnt = 0
     for player in i["registered_players"]:
@@ -119,7 +119,7 @@ def game_info(call, edit=0):
 @bot.callback_query_handler(func=lambda call: call.data.startswith("slotsGame_auto_"))
 def slotsGameAuto(call):
     game_id = int(call.data.split('_')[2])
-    response = requests.put(f'http://127.0.0.1:5000/games/{game_id}/slots')
+    response = requests.put(f'{BASE_URL}/games/{game_id}/slots')
     print(response.json())
     if (response.status_code // 100 == 2):
         bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.id, text=f"Места успешно отправлены!")
@@ -130,7 +130,7 @@ def slotsGameAuto(call):
 @bot.callback_query_handler(func=lambda call: call.data.startswith("rolesGame_auto_"))
 def rolesGameAuto(call):
     game_id = int(call.data.split('_')[2])
-    response = requests.put(f'http://127.0.0.1:5000/games/{game_id}/roles')
+    response = requests.put(f'{BASE_URL}/games/{game_id}/roles')
     if (response.status_code // 100 == 2):
         bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.id, text=f"Роли успешно отправлены!")
         main_menu(call.message)
@@ -152,7 +152,7 @@ def start_role_distribution(call):
     chat_id = call.message.chat.id
     game_id = int(call.data.split('_')[2])
     print(game_id)
-    response = requests.get(f"http://127.0.0.1:5000/game/{game_id}")
+    response = requests.get(f"{BASE_URL}/game/{game_id}")
     if (response.status_code // 100 != 2):
         return bot.send_message(chat_id, response.json()["error"])
 
@@ -213,7 +213,7 @@ def handle_role_selection(call):
     if session['current_slot'] > session['slots_cnt']:
         # Отправка данных на сервер
         response = requests.put(
-            f"http://127.0.0.1:5000/games/{session['game_id']}/force_roles",
+            f"{BASE_URL}/games/{session['game_id']}/force_roles",
             json={"roles": session['roles']}
         )
         print(session['roles'])
@@ -251,7 +251,7 @@ def finishGame(call):
 @bot.callback_query_handler(func=lambda call: call.data.startswith("Win_"))
 def finishGame_Win(call):
     game = call.data.split('_')
-    response = requests.post(f"http://127.0.0.1:5000/games/{int(game[2])}/finish", json={"civilians_win": int(game[1])})
+    response = requests.post(f"{BASE_URL}/games/{int(game[2])}/finish", json={"civilians_win": int(game[1])})
     if (response.status_code // 100 == 2):
         bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.id, text=f"Игра №{int(game[2])} успешно завершена.\nПобеда {'мирных' if bool(game[1]) else 'мафии'}!")
         main_menu(call.message)
@@ -269,7 +269,7 @@ def cancelGame(call):
 @bot.callback_query_handler(func=lambda call: call.data.startswith("forceCancelGame_"))
 def forceCancelGame(call):
     game_id = int(call.data.split('_')[1])
-    response = requests.delete(f"http://127.0.0.1:5000/game/{game_id}")
+    response = requests.delete(f"{BASE_URL}/game/{game_id}")
     if (response.status_code // 100 == 2):
         bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.id, text=f"Игра №{game_id} успешно отменена")
         main_menu(call.message)
@@ -280,7 +280,7 @@ def forceCancelGame(call):
 def regToGame(call):
     game_id = int(call.data.split('_')[1])
     print(game_id)
-    response = requests.delete("http://127.0.0.1:5000/game/unreg", json={
+    response = requests.delete(f"{BASE_URL}/game/unreg", json={
         "player_id": call.message.chat.id,
         "game_id": game_id})
     bot.register_callback_query_handler(call, game_info)
@@ -290,7 +290,7 @@ def regToGame(call):
 def regToGame(call):
     game_id = int(call.data.split('_')[1])
     print(game_id)
-    response = requests.post("http://127.0.0.1:5000/game/reg", json={
+    response = requests.post(f"{BASE_URL}/game/reg", json={
         "player_id": call.message.chat.id,
         "game_id": game_id})
     bot.register_callback_query_handler(call, game_info)
@@ -430,7 +430,7 @@ def handle_select_time(call):
         full_datetime = datetime.combine(date_obj.date(), time_obj)
 
         response = requests.post(
-            "http://127.0.0.1:5000/game/create",
+            f"/game/create",
             json={
                 "type": game_data['game_type'],
                 "slots_cnt": game_data['slots_cnt'],
@@ -461,7 +461,7 @@ def stat(call):
 def stat_for(call):
     try:
         type = call.data.split('_')[1]
-        response = requests.get(f'http://127.0.0.1:5000/stats/{type}/players')
+        response = requests.get(f'{BASE_URL}/stats/{type}/players')
         response.raise_for_status()
         data = response.json()
 
