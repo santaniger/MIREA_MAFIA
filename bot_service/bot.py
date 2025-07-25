@@ -1,8 +1,9 @@
 import requests
 import telebot
 from telebot import types
+from types import SimpleNamespace
 import random
-from config import BOT_TOKEN, BASE_URL
+from config import BOT_TOKEN, BASE_URL, ROLES_CONFIG, TRANSLATE_CONFIG
 from datetime import datetime, timedelta
 
 bot = telebot.TeleBot(BOT_TOKEN)
@@ -98,9 +99,14 @@ def game_info(call, edit=0):
     i = requests.get(f"{BASE_URL}/game/{game_id}").json()
     msg_text = f"\nИГРА №{i['game_id']}------------------\nПройдёт {format_date(i['date'].replace(' ', 'T'))}\nТип игры: {'Классическая' if i['type'] == 'classic'  else 'Городская'}\nВедущий: Г-н(жа) {i['master_nickname']}\nАудитория: {i['room']}\nМакс кол-во игроков: {i['slots_cnt']}\nЗарегистрировано: {i['players_count']}\n{'Зарегистрированные игроки:' if i['players_count'] else 'Будь первым!'}\n"
     cnt = 0
-    for player in i["registered_players"]:
+    for player in sorted(
+        i["registered_players"],
+        key=lambda x: (1, x['registered_at']) if x['slot'] == 0 else (0, x['slot'])
+    ):
         cnt += 1
-        msg_text += f"Г-н(жа) {player['nickname']} | {'В очереди' if cnt > i['slots_cnt'] else 'Ожидается'}\n"
+        slot = player['slot']
+        role = TRANSLATE_CONFIG[player['role']] if is_master(call.message.chat.id) else "???"
+        msg_text += f"{'' if slot == 0 else f'Слот {slot} | '}Г-н {player['nickname']} | {'В очереди' if cnt > i['slots_cnt'] else '✅' if role == 'None' else f'{role}'}\n"
         if (cnt == i['slots_cnt']):
             msg_text += "---------------\n"
     keyboard = types.InlineKeyboardMarkup()
@@ -110,11 +116,14 @@ def game_info(call, edit=0):
         keyboard.add(types.InlineKeyboardButton(text=f"ГО!", callback_data=f"regToGame_{game_id}"))
     if (is_master(call.message.chat.id)):
         #keyboard.add(types.InlineKeyboardButton(text=f"время", callback_data=f"changeGameTime_{game_id}"), types.InlineKeyboardButton(text=f"аудитория", callback_data=f"changeGameRoom_{game_id}"))
-        keyboard.add(types.InlineKeyboardButton(text=f"Роли", callback_data=f"rolesGame_{game_id}"), types.InlineKeyboardButton(text=f"Рассадка", callback_data=f"rolesGame_auto_{game_id}"))
+        keyboard.add(types.InlineKeyboardButton(text=f"Роли", callback_data=f"rolesGame_{game_id}"), types.InlineKeyboardButton(text=f"Рассадка", callback_data=f"slotsGame_auto_{game_id}"))
         keyboard.add(types.InlineKeyboardButton(text=f"Завершить", callback_data=f"finishGame_{game_id}"))
         keyboard.add(types.InlineKeyboardButton(text=f"ОТМЕНИТЬ", callback_data=f"cancelGame_{game_id}"))
     keyboard.add(types.InlineKeyboardButton(text=f"Назад", callback_data=f"menu_games"))
-    bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.id, text=msg_text, reply_markup=keyboard)
+    if edit == 0:
+        bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.id, text=msg_text, reply_markup=keyboard)
+    else:
+        bot.send_message(chat_id=call.message.chat.id, text=msg_text, reply_markup=keyboard)
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith("slotsGame_auto_"))
 def slotsGameAuto(call):
@@ -122,8 +131,25 @@ def slotsGameAuto(call):
     response = requests.put(f'{BASE_URL}/games/{game_id}/slots')
     print(response.json())
     if (response.status_code // 100 == 2):
-        bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.id, text=f"Места успешно отправлены!")
-        main_menu(call.message)
+        err_str = ""
+        for player_id, slot in zip(response.json()['players'], response.json()['slots']):
+            try:
+                bot.send_message(player_id, f"ИГРА №{game_id}\nВаше игровое место: {slot}")
+            except:
+                err_str += f"\nОшибка отправки пользователю {player_id}: {slot}"
+        if err_str:
+            bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.id,
+                                  text=f"Ошибка в отправке:{err_str}")
+        else:
+            bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.id,
+                                  text=f"Слоты успешно отправлены!")
+        game_info(SimpleNamespace(
+                    message=SimpleNamespace(
+                        chat=SimpleNamespace(id=call.message.chat.id)
+                    ),
+                    data=f"hello_{game_id}"
+                ), 1
+            )
     else:
         bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.id, text=f"Ошибка API: {response.content}")
 
@@ -132,20 +158,68 @@ def rolesGameAuto(call):
     game_id = int(call.data.split('_')[2])
     response = requests.put(f'{BASE_URL}/games/{game_id}/roles')
     if (response.status_code // 100 == 2):
-        bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.id, text=f"Роли успешно отправлены!")
-        main_menu(call.message)
+        err_str = ""
+        game_type = requests.get(f'{BASE_URL}/game/{game_id}').json()["type"]
+        for player_id, role in zip(response.json()['players'], response.json()['roles']):
+            try:
+                keyboard = telebot.types.InlineKeyboardMarkup()
+                keyboard.add(types.InlineKeyboardButton(text="Перевернуть", callback_data=f"cardShirt_{game_id}_{role}_0_{game_type}"))
+                bot.send_photo(player_id, open(f"../resources/{game_type}/card_shirt.jpg", "rb"), caption=f"ИГРА №{game_id}\nВаша карта: ???", reply_markup=keyboard)
+            except Exception as e:
+                print(e)
+                err_str += f"\nОшибка отправки пользователю {player_id}: {role}"
+        if err_str:
+            bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.id, text=f"Ошибка в отправке:{err_str}")
+        else:
+            bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.id, text=f"Роли успешно отправлены!")
+        game_info(SimpleNamespace(
+            message=SimpleNamespace(
+                chat=SimpleNamespace(id=call.message.chat.id)
+            ),
+            data=f"hello_{game_id}"
+        ), 1
+        )
+    elif (response.status_code == 401):
+        bot.edit_message_text(chat_id=call.message.chat.id, text=f"Не корректное количество игроков")
     else:
         bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.id, text=f"Ошибка API: {response.content}")
 
-user_sessions = {}
 
-roles_config = {
-    "11": ["mafia", "mafia", "don", "sheriff", "civilian", "civilian", "civilian", "civilian", "civilian", "civilian", "civilian"],
-    "10": ["mafia", "mafia", "don", "sheriff", "civilian", "civilian", "civilian", "civilian", "civilian", "civilian"],
-    "9": ["mafia", "don", "sheriff", "civilian", "civilian", "civilian", "civilian", "civilian", "civilian"],
-    "8": ["mafia", "don", "sheriff", "civilian", "civilian", "civilian", "civilian", "civilian"],
-    "1": ["mafia"]
-}
+@bot.callback_query_handler(func=lambda call: call.data.startswith("cardShirt_"))
+def cardShirt(call):
+    game_id = int(call.data.split('_')[1])
+    role = call.data.split('_')[2]
+    is_open = int(call.data.split('_')[3])
+    game_type = call.data.split('_')[4]
+    try:
+        keyboard = types.InlineKeyboardMarkup()
+        keyboard.add(types.InlineKeyboardButton(text="Перевернуть", callback_data=f"cardShirt_{game_id}_{role}_0_{game_type}" if is_open else f"cardShirt_{game_id}_{role}_1_{game_type}"))
+        media = types.InputMediaPhoto(
+            media=open(f"../resources/{game_type}/card_shirt.jpg" if is_open else f"../resources/{game_type}/{role}.jpg", 'rb'),
+            caption=f"ИГРА №{game_id}\nВаша карта: {'???' if is_open else TRANSLATE_CONFIG[role]}"
+        )
+
+        bot.edit_message_media(
+            chat_id=call.message.chat.id,
+            message_id=call.message.id,
+            media=media,
+            reply_markup=keyboard
+        )
+    except FileNotFoundError:
+        bot.answer_callback_query(
+            call.id,
+            f"Изображение для роли {role} не найдено",
+            show_alert=True
+        )
+    except Exception as e:
+        print(f"Ошибка при обновлении карточки: {e}")
+        bot.answer_callback_query(
+            call.id,
+            "Произошла ошибка при открытии карты",
+            show_alert=True
+        )
+
+user_sessions = {}
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith("rolesGame_force_"))
 def start_role_distribution(call):
@@ -155,11 +229,11 @@ def start_role_distribution(call):
     response = requests.get(f"{BASE_URL}/game/{game_id}")
     if (response.status_code // 100 != 2):
         return bot.send_message(chat_id, response.json()["error"])
-
+    game_type = response.json()["type"]
     slots_cnt = min(response.json()["players_count"], response.json()["slots_cnt"])
     print(slots_cnt)
     config_key = str(slots_cnt)
-    if config_key not in roles_config:
+    if config_key not in ROLES_CONFIG[game_type]:
         return bot.send_message(chat_id, "Недопустимое количество игроков")
 
     user_sessions[chat_id] = {
@@ -167,13 +241,13 @@ def start_role_distribution(call):
         "slots_cnt": int(slots_cnt),
         "current_slot": 1,
         "roles": [],
-        "remaining_roles": roles_config[config_key].copy()
+        "remaining_roles": ROLES_CONFIG[game_type][config_key].copy()
     }
 
-    ask_role(chat_id)
+    ask_role(chat_id, call.message.id)
 
 
-def ask_role(chat_id):
+def ask_role(chat_id, message_id):
     session = user_sessions.get(chat_id)
     if not session:
         return
@@ -186,9 +260,10 @@ def ask_role(chat_id):
             callback_data=f"role_select_{role}"
         ))
 
-    bot.send_message(
-        chat_id,
-        f"Выберите роль для слота {session['current_slot']}:",
+    bot.edit_message_text(
+        chat_id=chat_id,
+        message_id=message_id,
+        text=f"Выберите роль для слота {session['current_slot']}:",
         reply_markup=keyboard
     )
 
@@ -220,12 +295,18 @@ def handle_role_selection(call):
         print(response.json())
         if response.status_code // 100 == 2:
             bot.send_message(chat_id, "Роли успешно распределены!")
+            game_info(SimpleNamespace(
+                message=SimpleNamespace(
+                    chat=SimpleNamespace(id=call.message.chat.id)
+                ),
+                data=f"hello_{session['game_id']}"
+            ), 1
+            )
         else:
             bot.send_message(chat_id, "Ошибка распределения ролей")
         del user_sessions[chat_id]
     else:
-        bot.delete_message(chat_id, call.message.message_id)
-        ask_role(chat_id)
+        ask_role(chat_id, call.message.id)
 
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith("rolesGame_"))
@@ -236,8 +317,19 @@ def rolesGame(call):
     keyboard.add(types.InlineKeyboardButton(text=f"Автоматически", callback_data=f"rolesGame_auto_{game_id}"))
     keyboard.add(types.InlineKeyboardButton(text=f"Ручной ввод", callback_data=f"rolesGame_force_{game_id}"))
     keyboard.add(types.InlineKeyboardButton(text=f"Назад", callback_data=f"gameInfo_{game_id}"))
-    bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.id, text=f"Автоматическая раздача - всем игрокам придёт уведомление с их ролью\b"
-                                                                                         f"Ручной ввод - предпочтительный способ (необходимо ввести рассадку)", reply_markup=keyboard)
+    bot.send_message(chat_id=call.message.chat.id, text=f"Автоматическая раздача - всем игрокам придёт уведомление с их ролью\n"
+                                                                                         f"Ручной ввод - предпочтительный способ\n---\nСНАЧАЛА НЕОБХОДИМО ВЫПОЛНИТЬ РАССАДКУ!", reply_markup=keyboard)
+
+@bot.callback_query_handler(func=lambda call: call.data.startswith("slotsGame_"))
+def rolesGame(call):
+    game_id = int(call.data.split('_')[1])
+    print(game_id)
+    keyboard = types.InlineKeyboardMarkup()
+    keyboard.add(types.InlineKeyboardButton(text=f"Автоматически", callback_data=f"slotsGame_auto_{game_id}"))
+    keyboard.add(types.InlineKeyboardButton(text=f"Ручной ввод", callback_data=f"slotsGame_force_{game_id}"))
+    keyboard.add(types.InlineKeyboardButton(text=f"Назад", callback_data=f"gameInfo_{game_id}"))
+    bot.send_message(chat_id=call.message.chat.id, text=f"Автоматическая рассадка - всем игрокам придёт уведомление с их слотом\n"
+                                                                                         f"Ручной ввод - поочерёдный выбор игрока (1, 2 ... n)", reply_markup=keyboard)
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith("finishGame_"))
 def finishGame(call):
@@ -284,7 +376,7 @@ def regToGame(call):
         "player_id": call.message.chat.id,
         "game_id": game_id})
     bot.register_callback_query_handler(call, game_info)
-    game_info(call, 1)
+    game_info(call, 0)
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith("regToGame_"))
 def regToGame(call):
@@ -294,7 +386,7 @@ def regToGame(call):
         "player_id": call.message.chat.id,
         "game_id": game_id})
     bot.register_callback_query_handler(call, game_info)
-    game_info(call, 1)
+    game_info(call, 0)
 
 @bot.callback_query_handler(func=lambda call: call.data == "new_game")
 def new_game(call):
@@ -430,7 +522,7 @@ def handle_select_time(call):
         full_datetime = datetime.combine(date_obj.date(), time_obj)
 
         response = requests.post(
-            f"/game/create",
+            f"{BASE_URL}/game/create",
             json={
                 "type": game_data['game_type'],
                 "slots_cnt": game_data['slots_cnt'],

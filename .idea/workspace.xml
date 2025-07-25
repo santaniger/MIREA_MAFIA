@@ -5,13 +5,13 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="547fba5e-31ea-4e55-b690-2e0f6b773ee3" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/MIREA_MAFIA.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/MIREA_MAFIA.iml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/bot_service/Dockerfile" beforeDir="false" afterPath="$PROJECT_DIR$/bot_service/Dockerfile" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/bot_service/bot.py" beforeDir="false" afterPath="$PROJECT_DIR$/bot_service/bot.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/bot_service/config.py" beforeDir="false" afterPath="$PROJECT_DIR$/bot_service/config.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docker-compose.yml" beforeDir="false" afterPath="$PROJECT_DIR$/docker-compose.yml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/server_service/Dockerfile" beforeDir="false" afterPath="$PROJECT_DIR$/server_service/Dockerfile" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/server_service/database.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/server_service/database.py" beforeDir="false" afterPath="$PROJECT_DIR$/server_service/database.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/server_service/server.py" beforeDir="false" afterPath="$PROJECT_DIR$/server_service/server.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -29,6 +29,9 @@
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
+  <component name="MarkdownSettingsMigration">
+    <option name="stateVersion" value="1" />
+  </component>
   <component name="ProjectColorInfo">{
   &quot;associatedIndex&quot;: 0
 }</component>
@@ -38,19 +41,20 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "Python.aboba.executor": "Run",
-    "Python.bot.executor": "Run",
-    "Python.database.executor": "Debug",
-    "Python.server.executor": "Run",
-    "Python.testrequests.executor": "Run",
-    "Python.yyyyy.executor": "Run",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "git-widget-placeholder": "master",
-    "last_opened_file_path": "C:/Users/santa/PycharmProjects/MIREA_MAFIA"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;Python.aboba.executor&quot;: &quot;Run&quot;,
+    &quot;Python.bot.executor&quot;: &quot;Run&quot;,
+    &quot;Python.database.executor&quot;: &quot;Debug&quot;,
+    &quot;Python.server.executor&quot;: &quot;Run&quot;,
+    &quot;Python.testrequests.executor&quot;: &quot;Run&quot;,
+    &quot;Python.yyyyy.executor&quot;: &quot;Run&quot;,
+    &quot;RunOnceActivity.OpenProjectViewOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;master&quot;,
+    &quot;last_opened_file_path&quot;: &quot;C:/Users/santa/PycharmProjects/MIREA_MAFIA&quot;
   }
-}]]></component>
+}</component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
       <recent name="C:\Users\santa\PycharmProjects\MIREA_MAFIA" />
@@ -59,6 +63,7 @@
       <recent name="C:\Users\santa\PycharmProjects\MIREA_MAFIA\database_service" />
     </key>
     <key name="MoveFile.RECENT_KEYS">
+      <recent name="C:\Users\santa\Documents\Git\MIREA_MAFIA\resources\classic" />
       <recent name="C:\Users\santa\PycharmProjects\MIREA_MAFIA\server_service" />
       <recent name="C:\Users\santa\PycharmProjects\MIREA_MAFIA\database_service" />
       <recent name="C:\Users\santa\PycharmProjects\MIREA_MAFIA" />
@@ -87,6 +92,17 @@
       <updated>1746878599822</updated>
     </task>
     <servers />
+  </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State />
+          </value>
+        </entry>
+      </map>
+    </option>
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>

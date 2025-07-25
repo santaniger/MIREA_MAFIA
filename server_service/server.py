@@ -1,4 +1,5 @@
 from flask import Flask, jsonify, request
+from bot_service.config import ROLES_CONFIG
 import database as DB
 
 app = Flask(__name__)
@@ -176,15 +177,8 @@ def assign_slots_route(game_id):
 
 @app.route('/games/<int:game_id>/roles', methods=['PUT'])
 def assign_roles_route(game_id):
-    roles_config = {
-            "11": ["mafia", "mafia", "don", "sheriff", "civilian", "civilian", "civilian", "civilian", "civilian", "civilian", "civilian"],
-            "10": ["mafia", "mafia", "don", "sheriff", "civilian", "civilian", "civilian", "civilian", "civilian", "civilian"],
-            "9": ["mafia", "don", "sheriff", "civilian", "civilian", "civilian", "civilian", "civilian", "civilian"],
-            "8": ["mafia", "don", "sheriff", "civilian", "civilian", "civilian", "civilian", "civilian"],
-            "1": ["mafia"],
-        }
     try:
-        response, status_code = DB.APIHandler.assign_roles(game_id, roles_config)
+        response, status_code = DB.APIHandler.assign_roles(game_id, ROLES_CONFIG)
         return jsonify(response), status_code
     except Exception as e:
         return jsonify({"error": str(e)}), 500

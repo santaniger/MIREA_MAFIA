@@ -456,7 +456,9 @@ class APIHandler:
                             p.nickname,
                             p.username,
                             p.group_name,
-                            r.registration_date
+                            r.registration_date,
+                            r.slot,
+                            r.role
                         FROM registrations r
                         JOIN players p ON r.player_id = p.ID
                         WHERE r.game_id = ?
@@ -469,7 +471,9 @@ class APIHandler:
                     "nickname": player[1],
                     "username": player[2],
                     "group": player[3],
-                    "registered_at": player[4]
+                    "registered_at": player[4],
+                    "slot": player[5],
+                    "role": player[6]
                 })
 
             # Формируем полный ответ
@@ -695,7 +699,9 @@ class APIHandler:
                           (slot, game_id, player_id))
 
             conn.commit()
-            return {"message": f"Assigned {len(players)} slots"}, 200
+            return {"message": f"Assigned {len(players)} slots",
+                    "slots": slots,
+                    "players": players}, 200
 
         except Error as e:
             return {"error": str(e)}, 500
@@ -764,21 +770,24 @@ class APIHandler:
         try:
             c = conn.cursor()
 
+            c.execute('''SELECT type FROM games WHERE ID = ?''', (game_id,))
+            type = c.fetchone()[0]
+
             c.execute('''SELECT COUNT(*) 
                        FROM registrations 
                        WHERE game_id = ? AND in_queue = 0''', (game_id,))
             players_count = c.fetchone()[0]
-            print(players_count)
-            roles = roles_config.get(str(players_count))
+            print(type, players_count)
+            roles = roles_config.get(type).get(str(players_count))
             if not roles or len(roles) != players_count:
-                return {"error": "Invalid roles configuration"}, 400
+                return {"error": "Invalid roles configuration"}, 401
 
             c.execute('''SELECT player_id 
                        FROM registrations 
                        WHERE game_id = ? AND in_queue = 0''', (game_id,))
             players = [row[0] for row in c.fetchall()]
             random.shuffle(players)
-
+            print(players, roles)
             for player_id, role in zip(players, roles):
                 c.execute('''UPDATE registrations 
                             SET role = ? 
@@ -786,7 +795,9 @@ class APIHandler:
                           (role, game_id, player_id))
 
             conn.commit()
-            return {"message": f"Assigned roles to {len(players)} players"}, 200
+            return {"message": f"Assigned roles to {len(players)} players",
+                    "roles": roles,
+                    "players": players}, 200
 
         except Error as e:
             return {"error": str(e)}, 500
