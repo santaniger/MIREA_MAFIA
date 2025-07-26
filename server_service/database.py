@@ -458,7 +458,8 @@ class APIHandler:
                             p.group_name,
                             r.registration_date,
                             r.slot,
-                            r.role
+                            r.role,
+                            r.in_queue
                         FROM registrations r
                         JOIN players p ON r.player_id = p.ID
                         WHERE r.game_id = ?
@@ -473,7 +474,8 @@ class APIHandler:
                     "group": player[3],
                     "registered_at": player[4],
                     "slot": player[5],
-                    "role": player[6]
+                    "role": player[6],
+                    "in_queue": player[7]
                 })
 
             # Формируем полный ответ
