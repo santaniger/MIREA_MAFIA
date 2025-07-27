@@ -5,11 +5,13 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="547fba5e-31ea-4e55-b690-2e0f6b773ee3" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/MIREA_MAFIA.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/MIREA_MAFIA.iml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/bot_service/bot.py" beforeDir="false" afterPath="$PROJECT_DIR$/bot_service/bot.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/bot_service/config.py" beforeDir="false" afterPath="$PROJECT_DIR$/bot_service/config.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/bot_service/config.py" beforeDir="false" afterPath="$PROJECT_DIR$/config.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/server_service/database.py" beforeDir="false" afterPath="$PROJECT_DIR$/server_service/database.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/server_service/server.py" beforeDir="false" afterPath="$PROJECT_DIR$/server_service/server.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/utilities/utilities.py" beforeDir="false" afterPath="$PROJECT_DIR$/utilities/utilities.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -61,11 +63,11 @@
       <recent name="C:\Users\santa\PycharmProjects\MIREA_MAFIA\database_service" />
     </key>
     <key name="MoveFile.RECENT_KEYS">
+      <recent name="C:\Users\santa\Documents\Git\MIREA_MAFIA" />
       <recent name="C:\Users\santa\Documents\Git\MIREA_MAFIA\resources\classic" />
       <recent name="C:\Users\santa\PycharmProjects\MIREA_MAFIA\server_service" />
       <recent name="C:\Users\santa\PycharmProjects\MIREA_MAFIA\database_service" />
       <recent name="C:\Users\santa\PycharmProjects\MIREA_MAFIA" />
-      <recent name="C:\Users\santa\PycharmProjects\MIREA_MAFIA\bot_service" />
     </key>
   </component>
   <component name="RunAnythingCache">

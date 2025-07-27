@@ -953,7 +953,11 @@ class APIHandler:
                         SUM(CASE WHEN a.role = 'mafia' THEN 1 ELSE 0 END) as mafia_games,
                         SUM(CASE WHEN a.role = 'mafia' THEN a.is_winner ELSE 0 END) as mafia_wins,
                         SUM(CASE WHEN a.role = 'doctor' THEN 1 ELSE 0 END) as doctor_games,
-                        SUM(CASE WHEN a.role = 'doctor' THEN a.is_winner ELSE 0 END) as doctor_wins
+                        SUM(CASE WHEN a.role = 'doctor' THEN a.is_winner ELSE 0 END) as doctor_wins,
+                        SUM(CASE WHEN a.role = 'maniac' THEN 1 ELSE 0 END) as doctor_games,
+                        SUM(CASE WHEN a.role = 'maniac' THEN a.is_winner ELSE 0 END) as doctor_wins,
+                        SUM(CASE WHEN a.role = 'prostitute' THEN 1 ELSE 0 END) as doctor_games,
+                        SUM(CASE WHEN a.role = 'prostitute' THEN a.is_winner ELSE 0 END) as doctor_wins
                     FROM archive a
                     JOIN games g ON a.game_ID = g.ID
                     JOIN players p ON a.player_ID = p.ID
@@ -978,7 +982,11 @@ class APIHandler:
                                         SUM(CASE WHEN a.role = 'mafia' THEN 1 ELSE 0 END) as mafia_games,
                                         SUM(CASE WHEN a.role = 'mafia' THEN a.is_winner ELSE 0 END) as mafia_wins,
                                         SUM(CASE WHEN a.role = 'doctor' THEN 1 ELSE 0 END) as doctor_games,
-                                        SUM(CASE WHEN a.role = 'doctor' THEN a.is_winner ELSE 0 END) as doctor_wins
+                                        SUM(CASE WHEN a.role = 'doctor' THEN a.is_winner ELSE 0 END) as doctor_wins,
+                                        SUM(CASE WHEN a.role = 'prostitute' THEN 1 ELSE 0 END) as doctor_games,
+                                        SUM(CASE WHEN a.role = 'prostitute' THEN a.is_winner ELSE 0 END) as doctor_wins,
+                                        SUM(CASE WHEN a.role = 'maniac' THEN 1 ELSE 0 END) as doctor_games,
+                                        SUM(CASE WHEN a.role = 'maniac' THEN a.is_winner ELSE 0 END) as doctor_wins
                                     FROM archive a
                                     JOIN games g ON a.game_ID = g.ID
                                     JOIN players p ON a.player_ID = p.ID
@@ -1012,6 +1020,14 @@ class APIHandler:
                     'doctor': {
                         'games': row[13],
                         'wins': row[14]
+                    },
+                    'prostitute': {
+                        'games': row[15],
+                        'wins': row[16]
+                    },
+                    'maniac': {
+                        'games': row[17],
+                        'wins': row[18]
                     }
                 }
                 stats.append(stat)
@@ -1023,13 +1039,70 @@ class APIHandler:
         finally:
             conn.close()
 
+    @staticmethod
+    def get_player_games(player_id, archive=0):
+        conn = create_connection(DATABASE)
+        if not conn:
+            return {"error": "Database connection failed"}, 500
+        try:
+            games_list = []
+            c = conn.cursor()
+            if archive:
+                query = f"SELECT game_ID, role, slot, is_winner FROM archive WHERE player_ID = ?"
+                c.execute(query, (player_id,))
+                games = c.fetchall()
+                for game in games:
+                    query = f"SELECT date, type FROM games WHERE ID = ?"
+                    c.execute(query, (game[0],))
+                    game_data = c.fetchone()
+                    game = {"game_ID": game[0],
+                            "date": game_data[0],
+                            "type": game_data[1],
+                            "role": game[1],
+                            "slot": game[2],
+                            "is_winner": game[3]
+                            }
+                    games_list.append(game)
+            return {"games": games_list}, 200
+        except Error as e:
+            return {"error": str(e)}, 500
+        finally:
+            conn.close()
+
+    @staticmethod
+    def get_archived_registrations(game_id):
+        conn = create_connection(DATABASE)
+        if not conn:
+            return {"error": "Database connection failed"}, 500
+        try:
+            players_list = []
+            c = conn.cursor()
+            query = f"SELECT player_ID, role, slot, is_winner FROM archive WHERE game_ID = ?"
+            c.execute(query, (game_id,))
+            players = c.fetchall()
+            for player in players:
+                query = f"SELECT nickname FROM players WHERE ID = ?"
+                c.execute(query, (player[0],))
+                player_data = c.fetchone()
+                player = {"player_ID": player[0],
+                        "nickname": player_data[0],
+                        "role": player[1],
+                        "slot": player[2],
+                        "is_winner": player[3]
+                        }
+                players_list.append(player)
+            return {"players": players_list}, 200
+        except Error as e:
+            return {"error": str(e)}, 500
+        finally:
+            conn.close()
+
 def create_connection(db_file):
     try:
         return sqlite3.connect(db_file)
     except Error as e:
         print(e)
         return None
-
 
 def init_db():
     conn = create_connection(DATABASE)

@@ -1,5 +1,5 @@
 from flask import Flask, jsonify, request
-from bot_service.config import ROLES_CONFIG
+from config import ROLES_CONFIG
 import database as DB
 
 app = Flask(__name__)
@@ -174,7 +174,6 @@ def assign_slots_route(game_id):
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-
 @app.route('/games/<int:game_id>/roles', methods=['PUT'])
 def assign_roles_route(game_id):
     try:
@@ -182,7 +181,6 @@ def assign_roles_route(game_id):
         return jsonify(response), status_code
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-
 
 @app.route('/games/<int:game_id>/force_roles', methods=['PUT'])
 def force_roles_route(game_id):
@@ -207,7 +205,6 @@ def force_roles_route(game_id):
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-
 @app.route('/games/<int:game_id>/force_slots', methods=['PUT'])
 def force_slots_route(game_id):
     """
@@ -229,7 +226,6 @@ def force_slots_route(game_id):
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-
 @app.route('/games/<int:game_id>/finish', methods=['POST'])
 def finish_game_route(game_id):
     try:
@@ -247,6 +243,23 @@ def finish_game_route(game_id):
 def get_players_stats(game_type):
     try:
         response, status_code = DB.APIHandler.get_player_stats(game_type)
+        return jsonify(response), status_code
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/stats/player/<string:player_id>/games', methods=['GET'])
+def get_player_games(player_id):
+    try:
+        response, status_code = DB.APIHandler.get_player_games(player_id, 1)
+        return jsonify(response), status_code
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/registrations/archive/<string:game_id>', methods=['GET'])
+def get_archived_registrations(game_id):
+    try:
+        response, status_code = DB.APIHandler.get_archived_registrations(game_id)
         return jsonify(response), status_code
     except Exception as e:
         return jsonify({"error": str(e)}), 500

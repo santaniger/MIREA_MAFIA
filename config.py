@@ -1,5 +1,5 @@
-BOT_TOKEN = 'BOT_TOKEN'
-network_ip = "http://api"
+BOT_TOKEN = '7901224970:AAE62OgRcqS0KjFNG0yN5j9b5gfRAWvQQDY'
+network_ip = "http://127.0.0.1"
 server_port = "5000"
 BASE_URL = network_ip + ':' + server_port
 ROLES_CONFIG = {
@@ -37,7 +37,7 @@ TRANSLATE_CONFIG = {
 
 EMOJI_CONFIG = {
     "don": "🤵🏻",
-    "mafia": "♟",
+    "mafia": "🎱",
     "sheriff": "⭐",
     "civilian": "🙋🏻‍♂️",
     "prostitute": "🦋",

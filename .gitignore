@@ -4,7 +4,8 @@ server_service/mirea_mafia.db
 server_service/reg.py
 server_service/testrequests.py
 server_service/yyyyy.py
-bot_service/config.py
+config.py
 /change_master.py
 /.idea
 utilities/utilities.py
+resources/classic/FSM_card_shirt.jpg

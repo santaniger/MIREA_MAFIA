@@ -1,13 +1,12 @@
+import random
 import requests
 import telebot
 from telebot import types
 from types import SimpleNamespace
-import random
 from config import BOT_TOKEN, BASE_URL, ROLES_CONFIG, TRANSLATE_CONFIG, EMOJI_CONFIG
 from datetime import datetime, timedelta
 
 bot = telebot.TeleBot(BOT_TOKEN)
-
 
 def format_date(iso_string):
     months = {
@@ -46,9 +45,9 @@ def main_menu(message, is_call=0):
         callback_data="main_menu"
     ))
     if is_call:
-        bot.edit_message_text(chat_id=message.chat.id, message_id=message.id, text=f"Доброе утро город!\nЗапланировано: {games_cnt} игр\nТы зарегистрирован на {regisrations_cnt} игр", reply_markup=keyboard, parse_mode='HTML')
+        bot.edit_message_text(chat_id=message.chat.id, message_id=message.id, text=f"Доброе утро, город!\nЗапланировано: {games_cnt} игр\nТы зарегистрирован на {regisrations_cnt} игр", reply_markup=keyboard, parse_mode='HTML')
     else:
-        bot.send_message(chat_id=message.chat.id, text=f"Доброе утро город!\nЗапланировано: {games_cnt} игр\nТы зарегистрирован на {regisrations_cnt} игр", reply_markup=keyboard, parse_mode='HTML')
+        bot.send_message(chat_id=message.chat.id, text=f"Доброе утро, город!\nЗапланировано: {games_cnt} игр\nТы зарегистрирован на {regisrations_cnt} игр", reply_markup=keyboard, parse_mode='HTML')
 
 @bot.message_handler(commands=["start"])
 def start_command(message):
@@ -67,10 +66,16 @@ def get_name(message):
 
 def get_group(message, name):
     loading = bot.send_message(message.chat.id, "Регистрирую...")
+    try:
+        username = message.from_user.username
+    except:
+        username = f"random_generaed_{random.randint(1000000, 9999999)}"
+    if username == None:
+        username = f"random_generaed_{random.randint(1000000, 9999999)}"
     response = requests.post(f"{BASE_URL}/reg", json={
         "ID": message.chat.id,
         "nickname": name,
-        "username": message.from_user.username,
+        "username": username,
         "group_name": message.text})
     if (response.status_code // 100 == 2):
         bot.edit_message_text(chat_id=message.chat.id, message_id=loading.id, text="Критический успех")
@@ -651,12 +656,101 @@ def handle_select_time(call):
 
 @bot.callback_query_handler(func=lambda call: call.data == "stat")
 def stat(call):
+    player = list(filter(lambda x: int(x['ID']) == call.message.chat.id, requests.get(f'{BASE_URL}/stats/all/players').json()['stats']))
     keyboard = types.InlineKeyboardMarkup()
-    keyboard.add(types.InlineKeyboardButton(text=f"👤 Все игры", callback_data=f"stat_all"))
-    keyboard.add(types.InlineKeyboardButton(text=f"🤵 Классика", callback_data=f"stat_classic"))
-    keyboard.add(types.InlineKeyboardButton(text=f"🥷 Городская", callback_data=f"stat_extended"))
-    keyboard.add(types.InlineKeyboardButton(text=f"🔙", callback_data=f"main_menu"))
-    bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.id, text=f"Выберите категорию игры", reply_markup=keyboard)
+    if player:
+        keyboard.add(types.InlineKeyboardButton(text=f"🗄️ Мои игры", callback_data=f"stat_myGames"))
+        keyboard.add(types.InlineKeyboardButton(text=f"👤 Все типы общ", callback_data=f"stat_all"))
+        keyboard.add(types.InlineKeyboardButton(text=f"🤵‍♂️ Классика общ", callback_data=f"stat_classic"),
+                     types.InlineKeyboardButton(text=f"🥷 Городская общ", callback_data=f"stat_extended"))
+        keyboard.add(types.InlineKeyboardButton(text=f"🔙", callback_data=f"main_menu"))
+        player = player[0]
+        bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.id, text=f"Игровой ник: {player['nickname']}\n"
+                                                                                             f"🎮 Всего игр: {player['games']}\n🏆 Побед: {player['wins']}\n➗ Винрейт: {(player['wins'] / player['games'] * 100) if player['games'] > 0 else 0:.1f}%\n"
+                                                                                             f"\n⚫ МАФИЯ — {player['don']['wins'] + player['mafia']['wins'] + player['maniac']['wins']}/{player['don']['games'] + player['mafia']['games'] + player['maniac']['games']} = "
+                                                                                             f"{((player['don']['wins'] + player['mafia']['wins'] + player['maniac']['wins']) / (player['don']['games'] + player['mafia']['games'] + player['maniac']['games']) * 100) if (player['don']['games'] + player['mafia']['games'] + player['maniac']['games']) > 0 else 0:.1f}%\n"
+                                                                                             f"┠ {EMOJI_CONFIG['don']} {TRANSLATE_CONFIG['don']}: {player['don']['games']}/{player['don']['wins']} = {(player['don']['wins'] / player['don']['games'] * 100) if player['don']['games'] > 0 else 0:.1f}%\n"
+                                                                                             f"┠ {EMOJI_CONFIG['mafia']} {TRANSLATE_CONFIG['mafia']}: {player['mafia']['games']}/{player['mafia']['wins']} = {(player['mafia']['wins'] / player['mafia']['games'] * 100) if player['mafia']['games'] > 0 else 0:.1f}%\n"
+                                                                                             f"┖ {EMOJI_CONFIG['maniac']} {TRANSLATE_CONFIG['maniac']}: {player['maniac']['games']}/{player['maniac']['wins']} = {(player['maniac']['wins'] / player['maniac']['games'] * 100) if player['maniac']['games'] > 0 else 0:.1f}%\n"
+                                                                                             f"\n🔴 МИРНЫЕ — {player['sheriff']['wins'] + player['civilian']['wins'] + player['doctor']['wins'] + player['prostitute']['wins']}/{player['sheriff']['games'] + player['civilian']['games'] + player['doctor']['games'] + player['prostitute']['games']}"
+                                                                                             f" {((player['sheriff']['wins'] + player['civilian']['wins'] + player['doctor']['wins'] + player['prostitute']['wins']) / (player['sheriff']['games'] + player['civilian']['games'] + player['doctor']['games'] + player['prostitute']['games']) * 100) if player['sheriff']['games'] + player['civilian']['games'] + player['doctor']['games'] + player['prostitute']['games'] > 0 else 0:.1f}%\n"
+                                                                                             f"┠ {EMOJI_CONFIG['sheriff']} {TRANSLATE_CONFIG['sheriff']}: {player['sheriff']['wins']}/{player['sheriff']['games']} = {(player['sheriff']['wins'] / player['sheriff']['games'] * 100) if player['sheriff']['games'] > 0 else 0:.1f}%\n"
+                                                                                             f"┠ {EMOJI_CONFIG['civilian']} {TRANSLATE_CONFIG['civilian']}: {player['civilian']['wins']}/{player['civilian']['games']} = {(player['civilian']['wins'] / player['civilian']['games'] * 100) if player['civilian']['games'] > 0 else 0:.1f}%\n"
+                                                                                             f"┠ {EMOJI_CONFIG['doctor']} {TRANSLATE_CONFIG['doctor']}: {player['doctor']['wins']}/{player['doctor']['games']} = {(player['doctor']['wins'] / player['doctor']['games'] * 100) if player['doctor']['games'] > 0 else 0:.1f}%\n"
+                                                                                             f"┖ {EMOJI_CONFIG['prostitute']} {TRANSLATE_CONFIG['prostitute']}: {player['prostitute']['wins']}/{player['prostitute']['games']} = {(player['prostitute']['wins'] / player['prostitute']['games'] * 100) if player['prostitute']['games'] > 0 else 0:.1f}%\n\n👥 Общая статистика:", reply_markup=keyboard)
+    else:
+        keyboard.add(types.InlineKeyboardButton(text=f"👤 Все типы", callback_data=f"stat_all"))
+        keyboard.add(types.InlineKeyboardButton(text=f"🤵‍♂️ Классика", callback_data=f"stat_classic"), types.InlineKeyboardButton(text=f"🥷 Городская", callback_data=f"stat_extended"))
+        keyboard.add(types.InlineKeyboardButton(text=f"🔙", callback_data=f"main_menu"))
+        player = requests.get(f'{BASE_URL}/players/{call.message.chat.id}').json()
+        bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.id,
+                              text=f"Игровой ник: {player['nickname']}\n"
+                                   f"🥇 Завершите свою первую игру для отображения личной статистики\n\n👥 Другая статистика:",
+                              reply_markup=keyboard)
+
+@bot.callback_query_handler(func=lambda call: call.data == "stat_myGames")
+def stat_myGames(call):
+    try:
+        response = requests.get(f"{BASE_URL}/stats/player/{call.message.chat.id}/games")
+        message_text = "🗄️ Архив игр:\n"
+        keyboard = types.InlineKeyboardMarkup()
+        for game in response.json()['games']:
+            message_text += f"\n— {format_date(game['date'].replace(' ', 'T'))}\n{'Классическая' if game['type'] == 'classic' else 'Городская'} игра №{game['game_ID']}\nРоль: {EMOJI_CONFIG[game['role']]} {TRANSLATE_CONFIG[game['role']]} ({game['slot']} слот)"
+            message_text += "\n🏆 ПОБЕДА 🏆\n" if game['is_winner'] else "\n💀 ПОРАЖЕНИЕ 💀\n"
+            keyboard.add(types.InlineKeyboardButton(text=f"ИГРА №{game['game_ID']}", callback_data=f"archivedGameInfo_{game['game_ID']}"))
+        keyboard.add(types.InlineKeyboardButton(text=f"🔙", callback_data=f"stat"))
+        bot.edit_message_text(
+                chat_id=call.message.chat.id,
+                message_id=call.message.message_id,
+                text=message_text,
+                reply_markup=keyboard,
+                parse_mode='HTML'
+            )
+    except requests.exceptions.RequestException as e:
+        error_text = f"🚫 Ошибка получения данных: {str(e)}"
+        bot.answer_callback_query(call.id, error_text, show_alert=True)
+    except Exception as e:
+        error_text = "⚠️ Произошла непредвиденная ошибка"
+        print(e)
+        bot.answer_callback_query(call.id, error_text, show_alert=True)
+
+@bot.callback_query_handler(func=lambda call: call.data.startswith("archivedGameInfo_"))
+def archivedGame_info(call, edit=0):
+    game_id = int(call.data.split('_')[1])
+    i = requests.get(f"{BASE_URL}/game/{game_id}").json()
+    archived = requests.get(f"{BASE_URL}/registrations/archive/{game_id}").json()
+    msg_text = f"\nИГРА №{i['game_id']}------------------\nПрошла {format_date(i['date'].replace(' ', 'T'))}\nТип игры: {'Классическая' if i['type'] == 'classic'  else 'Городская'}\nВедущий: Г-н(жа) {i['master_nickname']}\nАудитория: {i['room']}\nКол-во игроков: {len(archived['players'])}\n"
+    players = sorted(archived["players"], key=lambda x: x['slot'])
+
+    mafia_team = []
+    city_team = []
+
+    mafia_roles = {"mafia", "don", "maniac"}
+    civilian_win = 0
+    for player in players:
+        if player['role'] == "civilian" and player['is_winner']:
+            civilian_win = 1
+        slot = player['slot']
+        role = player['role']
+        nickname = player['nickname']
+        if __name__ == '__main__':
+            line = f"<b>Слот {slot} | Г-н {nickname} | {EMOJI_CONFIG[role]} {TRANSLATE_CONFIG[role]}</b>" if player['player_ID'] == call.message.chat.id else f"Слот {slot} | Г-н {nickname} | {EMOJI_CONFIG[role]} {TRANSLATE_CONFIG[role]}"
+        if role in mafia_roles:
+            mafia_team.append(line)
+        else:
+            city_team.append(line)
+    msg_text += f"\nПОБЕДА {'МИРНЫХ 🔴' if civilian_win else 'МАФИИ ⚫'}\n\n"
+
+    msg_text += "КОМАНДА МАФИИ:\n" + "\n".join(mafia_team) if civilian_win == 0 else "КОМАНДА МИРНЫХ:\n" + "\n".join(
+        city_team)
+    msg_text += "\n\nКОМАНДА МИРНОГО ГОРОДА:\n" + "\n".join(
+        city_team) if civilian_win == 0 else "\n\nКОМАНДА МАФИИ:\n" + "\n".join(mafia_team)
+    keyboard = types.InlineKeyboardMarkup()
+    keyboard.add(types.InlineKeyboardButton(text=f"🔙", callback_data=f"stat_myGames"))
+    if edit == 0:
+        bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.id, text=msg_text, reply_markup=keyboard, parse_mode="html")
+    else:
+        bot.send_message(chat_id=call.message.chat.id, text=msg_text, reply_markup=keyboard)
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith("stat_"))
 def stat_for(call):
@@ -685,9 +779,9 @@ def stat_for(call):
                 roles_text += f"\n💉 Доктор: {player['doctor']['wins']} из {player['doctor']['games']} | {(player['doctor']['wins'] / player['doctor']['games'] * 100) if player['doctor']['games'] > 0 else 0:.1f}%"
 
             message_text += (
-                f"🏆 Г-н (Г-жа) {player['nickname']}\n"
+                f"👤 Г-н (Г-жа) {player['nickname']}\n"
                 f"🎮 Всего игр: {player['games']}\n"
-                f"📈 Общий винрейт: {total_winrate:.1f}%\n"
+                f"📈 Винрейт: {total_winrate:.1f}%\n"
                 f"{roles_text}\n"
                 f"────────────────────\n"
             )
