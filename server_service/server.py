@@ -9,7 +9,7 @@ DB.init_db()
 def register_player():
     try:
         data = request.get_json()
-        print(data)
+        print('/reg', data)
         if not data:
             return jsonify({"error": "No data provided"}), 400
 
@@ -66,7 +66,7 @@ def get_player(player_id):
 @app.route('/stat', methods=['GET'])
 def get_stat():
     response, status_code = DB.APIHandler.get_stat()
-    print(response)
+    print('/stat', response)
     return jsonify(response), status_code
 
 @app.route('/game/create', methods=['POST'])
@@ -129,7 +129,7 @@ def register_player_to_game():
     try:
         data = request.get_json()
         response, status_code = DB.APIHandler.get_game_by_id(data["game_id"])
-        print(response)
+        print('/game/reg', response)
         data["in_queue"] = 1 - int(response["available_slots"] > 0)
         response, status_code = DB.APIHandler.register_to_game(data)
         return jsonify(response), status_code
@@ -141,7 +141,7 @@ def get_registrations_list():
     try:
         try:
             data = request.get_json()
-            print(data)
+            print('/game/registrations', data)
             if ("player_id" in data):
                 response, status_code = DB.APIHandler.get_registrations(data["player_id"])
         except:
@@ -155,7 +155,7 @@ def cancel_player_registration():
     try:
         data = request.get_json()
         response, status_code = DB.APIHandler.cancel_registration(data)
-        print(response)
+        print('/game/unreg', response)
         return jsonify(response), status_code
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -246,7 +246,6 @@ def get_players_stats(game_type):
         return jsonify(response), status_code
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-
 
 @app.route('/stats/player/<string:player_id>/games', methods=['GET'])
 def get_player_games(player_id):

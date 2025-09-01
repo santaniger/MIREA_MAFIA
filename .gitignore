@@ -9,3 +9,4 @@ config.py
 /.idea
 utilities/utilities.py
 resources/classic/FSM_card_shirt.jpg
+server_service/mirea_mafia1.db

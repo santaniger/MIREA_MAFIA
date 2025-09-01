@@ -8,7 +8,7 @@ DATABASE = "mirea_mafia.db"
 class APIHandler:
     @staticmethod
     def register_player(data):
-        required_fields = ['ID', 'nickname', 'username', 'group_name']
+        required_fields = ['ID', 'chat_ID', 'nickname', 'username', 'group_name']
         if not all(field in data for field in required_fields):
             return {"error": "Missing required fields"}, 400
 
@@ -27,9 +27,9 @@ class APIHandler:
             if c.fetchone():
                 return {"error": "Nickname or username already taken"}, 400
 
-            c.execute('''INSERT INTO players (ID, username, nickname, group_name)
-                         VALUES (?, ?, ?, ?)''',
-                      (data['ID'], data['username'], data['nickname'], data['group_name']))
+            c.execute('''INSERT INTO players (ID, chat_ID, username, nickname, group_name)
+                         VALUES (?, ?, ?, ?, ?)''',
+                      (data['ID'], data['chat_ID'], data['username'], data['nickname'], data['group_name']))
 
             conn.commit()
             return {"message": "Player registered successfully", "player_id": data['ID']}, 201
@@ -180,7 +180,7 @@ class APIHandler:
             print("player", player)
             if not player:
                 return {"error": "Player with this ID not found"}, 404
-            status = not(player[4])
+            status = not(player[5])
             c.execute("UPDATE players SET is_master = ? WHERE ID = ?",
                       (status, data['ID']))
 
@@ -244,6 +244,7 @@ class APIHandler:
 
             c.execute('''SELECT 
                             ID,
+                            chat_ID,
                             username,
                             nickname,
                             group_name,
@@ -258,10 +259,11 @@ class APIHandler:
 
             player_info = {
                 "ID": player[0],
-                "username": player[1],
-                "nickname": player[2],
-                "group_name": player[3],
-                "is_master": bool(player[4])
+                "chat_ID": player[1],
+                "username": player[2],
+                "nickname": player[3],
+                "group_name": player[4],
+                "is_master": bool(player[5])
             }
 
             return player_info, 200
@@ -280,6 +282,7 @@ class APIHandler:
         try:
             c = conn.cursor()
 
+            # Получаем все данные об играх
             c.execute('''SELECT 
                             a.game_ID, 
                             a.player_ID, 
@@ -298,24 +301,76 @@ class APIHandler:
                         ORDER BY g.date DESC''')
 
             archive_data = c.fetchall()
-            print('archive_data', archive_data)
 
-            stats = []
+            # Инициализация статистики
+            stats = {
+                "classic_games": 0,
+                "classic_civilian_wins": 0,
+                "extended_games": 0,
+                "extended_civilian_wins": 0,
+                "roles_distribution": {
+                    "don": 0,
+                    "mafia": 0,
+                    "sheriff": 0,
+                    "doctor": 0,
+                    "civilian": 0,
+                    "prostitute": 0,
+                    "maniac": 0
+                },
+                "roles_wins": {
+                    "don": 0,
+                    "mafia": 0,
+                    "sheriff": 0,
+                    "doctor": 0,
+                    "civilian": 0,
+                    "prostitute": 0,
+                    "maniac": 0
+                }
+            }
+
+            # Словари для хранения уникальных игр и их победителей
+            classic_games = set()
+            classic_civilian_wins = set()
+            extended_games = set()
+            extended_civilian_wins = set()
+
             for record in archive_data:
-                stats.append({
-                    "game_id": record[0],
-                    "player_id": record[1],
-                    "player_nickname": record[2],
-                    "player_group": record[3],
-                    "role": record[4],
-                    "slot": record[5],
-                    "is_winner": bool(record[6]),
-                    "room": record[7],
-                    "game_type": record[8],
-                    "date": record[9]
-                })
+                game_id = record[0]
+                role = record[4]
+                is_winner = bool(record[6])
+                game_type = record[8]
 
-            return {"stats": stats, "count": len(stats)}, 200
+                # Подсчет распределения ролей
+                if role in stats["roles_distribution"]:
+                    stats["roles_distribution"][role] += 1
+
+                # Подсчет побед ролей
+                if is_winner and role in stats["roles_wins"]:
+                    stats["roles_wins"][role] += 1
+
+                # Обработка классических игр
+                if game_type == "classic":
+                    classic_games.add(game_id)
+
+                    # Проверяем, есть ли гражданская победа в этой игре
+                    if role == "civilian" and is_winner:
+                        classic_civilian_wins.add(game_id)
+
+                # Обработка расширенных игр
+                elif game_type == "extended":
+                    extended_games.add(game_id)
+
+                    # Проверяем, есть ли гражданская победа в этой игре
+                    if role == "civilian" and is_winner:
+                        extended_civilian_wins.add(game_id)
+
+            # Заполняем итоговую статистику
+            stats["classic_games"] = len(classic_games)
+            stats["classic_civilian_wins"] = len(classic_civilian_wins)
+            stats["extended_games"] = len(extended_games)
+            stats["extended_civilian_wins"] = len(extended_civilian_wins)
+
+            return stats, 200
 
         except Error as e:
             return {"error": str(e)}, 500
@@ -440,6 +495,7 @@ class APIHandler:
                             g.date, 
                             g.master_ID,
                             g.slots_cnt,
+                            g.is_archived,
                             p.nickname as master_nickname
                         FROM games g
                         LEFT JOIN players p ON g.master_ID = p.ID
@@ -486,7 +542,8 @@ class APIHandler:
                 "date": game[3],
                 "master_id": game[4],
                 "slots_cnt": game[5],
-                "master_nickname": game[6] if game[6] else "Unknown",
+                "is_archived": game[6],
+                "master_nickname": game[7] if game[7] else "Unknown",
                 "registered_players": players,
                 "players_count": len(players),
                 "available_slots": game[5] - len(players) if game[5] else None
@@ -1113,6 +1170,7 @@ def init_db():
         c = conn.cursor()
         c.execute('''CREATE TABLE IF NOT EXISTS players
                      (ID INTEGER PRIMARY KEY,
+                      chat_ID INTEGER NOT NULL UNIQUE,
                       username TEXT NOT NULL UNIQUE,
                       nickname TEXT NOT NULL UNIQUE,
                       group_name TEXT,

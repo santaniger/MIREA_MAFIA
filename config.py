@@ -1,4 +1,4 @@
-BOT_TOKEN = '7901224970:AAE62OgRcqS0KjFNG0yN5j9b5gfRAWvQQDY'
+BOT_TOKEN = 'BOT_TOKEN'
 network_ip = "http://127.0.0.1"
 server_port = "5000"
 BASE_URL = network_ip + ':' + server_port
@@ -34,6 +34,8 @@ TRANSLATE_CONFIG = {
     "maniac": "Маньяк",
     "None": "Нет"
 }
+
+GROUPES_CONFIG = [-1002752874605]
 
 EMOJI_CONFIG = {
     "don": "🤵🏻",
