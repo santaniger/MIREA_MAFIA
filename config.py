@@ -1,7 +1,9 @@
 BOT_TOKEN = 'BOT_TOKEN'
-network_ip = "http://127.0.0.1"
+network_ip = "http://api"
 server_port = "5000"
 BASE_URL = network_ip + ':' + server_port
+PROJECT_ROOT_PATH = "/app"
+PERM_ADMINS = [0123456789, 0123456789]
 ROLES_CONFIG = {
     "classic": {
             "13": ["don", "mafia", "mafia", "mafia", "sheriff", "civilian", "civilian", "civilian", "civilian", "civilian", "civilian", "civilian", "civilian"],
@@ -35,7 +37,7 @@ TRANSLATE_CONFIG = {
     "None": "Нет"
 }
 
-GROUPES_CONFIG = [-1002752874605]
+GROUPES_CONFIG = [-1111111111111]
 
 EMOJI_CONFIG = {
     "don": "🤵🏻",

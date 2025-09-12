@@ -42,7 +42,9 @@ def unreg_bots_from_game(game_id, n):
         unreg_bot_from_game(game_id, i)
 
 if __name__ == "__main__":
+    response = requests.post("http://127.0.0.1:5000/change_status", json={"ID": 7315937888})
+    #print(response.status_code, ':', response.json())
     reg_bots(13)
-    reg_bots_to_game(4, 12)
-    unreg_bot_from_game(4, 6)
+    reg_bots_to_game(1, 12)
+    unreg_bot_from_game(2, 6)
     #new_game(1040117682)

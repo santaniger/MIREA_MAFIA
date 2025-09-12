@@ -3,8 +3,8 @@ version: '3.8'
 services:
   api:
     build:
-      context: ./server_service
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./server_service/Dockerfile
     container_name: mafia-api
     ports:
       - "5000:5000"
@@ -15,8 +15,8 @@ services:
 
   bot:
     build:
-      context: ./bot_service
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./bot_service/Dockerfile
     container_name: mafia-bot
     volumes:
       - ./bot_service/data:/app/bot_service/data  # Для сохранения состояний бота

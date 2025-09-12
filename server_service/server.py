@@ -1,6 +1,6 @@
 from flask import Flask, jsonify, request
 from config import ROLES_CONFIG
-import database as DB
+from server_service import database as DB
 
 app = Flask(__name__)
 DB.init_db()

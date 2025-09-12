@@ -5,10 +5,13 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="547fba5e-31ea-4e55-b690-2e0f6b773ee3" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/MIREA_MAFIA.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/MIREA_MAFIA.iml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/vcs.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/bot_service/Dockerfile" beforeDir="false" afterPath="$PROJECT_DIR$/bot_service/Dockerfile" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/bot_service/bot.py" beforeDir="false" afterPath="$PROJECT_DIR$/bot_service/bot.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/config.py" beforeDir="false" afterPath="$PROJECT_DIR$/config.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/docker-compose.yml" beforeDir="false" afterPath="$PROJECT_DIR$/docker-compose.yml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/server_service/Dockerfile" beforeDir="false" afterPath="$PROJECT_DIR$/server_service/Dockerfile" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/server_service/database.py" beforeDir="false" afterPath="$PROJECT_DIR$/server_service/database.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/server_service/server.py" beforeDir="false" afterPath="$PROJECT_DIR$/server_service/server.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/utilities/utilities.py" beforeDir="false" afterPath="$PROJECT_DIR$/utilities/utilities.py" afterDir="false" />
@@ -47,18 +50,19 @@
     &quot;Python.database.executor&quot;: &quot;Debug&quot;,
     &quot;Python.server.executor&quot;: &quot;Run&quot;,
     &quot;Python.testrequests.executor&quot;: &quot;Run&quot;,
+    &quot;Python.utilities.executor&quot;: &quot;Run&quot;,
     &quot;Python.yyyyy.executor&quot;: &quot;Run&quot;,
     &quot;RunOnceActivity.OpenProjectViewOnStart&quot;: &quot;true&quot;,
     &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
     &quot;git-widget-placeholder&quot;: &quot;master&quot;,
-    &quot;last_opened_file_path&quot;: &quot;C:/Users/santa/PycharmProjects/MIREA_MAFIA&quot;
+    &quot;last_opened_file_path&quot;: &quot;C:/Users/santa/PycharmProjects/MIREA_MAFIA/bot_service&quot;
   }
 }</component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
-      <recent name="C:\Users\santa\PycharmProjects\MIREA_MAFIA" />
-      <recent name="C:\Users\santa\PycharmProjects\MIREA_MAFIA\server_service" />
       <recent name="C:\Users\santa\PycharmProjects\MIREA_MAFIA\bot_service" />
+      <recent name="C:\Users\santa\PycharmProjects\MIREA_MAFIA\server_service" />
+      <recent name="C:\Users\santa\PycharmProjects\MIREA_MAFIA" />
       <recent name="C:\Users\santa\PycharmProjects\MIREA_MAFIA\database_service" />
     </key>
     <key name="MoveFile.RECENT_KEYS">
@@ -74,9 +78,10 @@
       <command value="@bot.callback_query_handler(func=lambda call: call.data == &quot;menu_games&quot;) def cancel_handler(call):" />
     </option>
   </component>
-  <component name="RunManager" selected="Python.bot">
+  <component name="RunManager">
     <configuration name="bot" type="PythonConfigurationType" factoryName="Python" nameIsGenerated="true">
       <module name="MIREA_MAFIA" />
+      <option name="ENV_FILES" value="" />
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
       <envs>
@@ -98,6 +103,7 @@
     </configuration>
     <configuration name="server" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="MIREA_MAFIA" />
+      <option name="ENV_FILES" value="" />
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
       <envs>
@@ -119,6 +125,7 @@
     </configuration>
     <configuration name="utilities" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="MIREA_MAFIA" />
+      <option name="ENV_FILES" value="" />
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
       <envs>
@@ -231,11 +238,6 @@
           <url>file://$PROJECT_DIR$/server_service/yyyyy.py</url>
           <line>49</line>
           <option name="timeStamp" value="30" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/bot_service/bot.py</url>
-          <line>386</line>
-          <option name="timeStamp" value="31" />
         </line-breakpoint>
       </breakpoints>
     </breakpoint-manager>

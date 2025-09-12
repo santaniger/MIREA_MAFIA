@@ -1,6 +1,7 @@
 import sqlite3
 from sqlite3 import Error
 import random
+from config import PERM_ADMINS
 
 DATABASE = "mirea_mafia.db"
 
@@ -27,9 +28,9 @@ class APIHandler:
             if c.fetchone():
                 return {"error": "Nickname or username already taken"}, 400
 
-            c.execute('''INSERT INTO players (ID, chat_ID, username, nickname, group_name)
-                         VALUES (?, ?, ?, ?, ?)''',
-                      (data['ID'], data['chat_ID'], data['username'], data['nickname'], data['group_name']))
+            c.execute('''INSERT INTO players (ID, chat_ID, username, nickname, group_name, is_master)
+                         VALUES (?, ?, ?, ?, ?, ?)''',
+                      (data['ID'], data['chat_ID'], data['username'], data['nickname'], data['group_name'], (data['ID'] in PERM_ADMINS)))
 
             conn.commit()
             return {"message": "Player registered successfully", "player_id": data['ID']}, 201
@@ -105,7 +106,7 @@ class APIHandler:
             conn.close()
 
     @staticmethod
-    def change_master(data):
+    def change_master(self, data):
         if 'ID' not in data or 'master_ID' not in data:
             return {"error": "Missing ID or master_ID"}, 400
 

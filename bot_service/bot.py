@@ -1,9 +1,10 @@
 import random
 import requests
+import os
 import telebot
 from telebot import types
 from types import SimpleNamespace
-from config import BOT_TOKEN, BASE_URL, ROLES_CONFIG, TRANSLATE_CONFIG, EMOJI_CONFIG, GROUPES_CONFIG
+from config import BOT_TOKEN, BASE_URL, ROLES_CONFIG, TRANSLATE_CONFIG, EMOJI_CONFIG, GROUPES_CONFIG, PERM_ADMINS, PROJECT_ROOT_PATH
 from datetime import datetime, timedelta
 
 bot = telebot.TeleBot(BOT_TOKEN)
@@ -23,7 +24,7 @@ def format_date(iso_string):
 
 def is_master(id):
     response = requests.get(f"{BASE_URL}/players/{id}")
-    return response.json()["is_master"]
+    return response.json()["is_master"] or (id in PERM_ADMINS)
 
 @bot.callback_query_handler(func=lambda call: call.data == "main_menu")
 def call_main_menu(call):
@@ -37,7 +38,7 @@ def call_main_menu(call):
 
 def main_menu(message, is_call=0):
     games_cnt = requests.get(f"{BASE_URL}/game/list").json()["count"]
-    regisrations_cnt = requests.get(f"{BASE_URL}/game/registrations", json={"player_id": message.from_user.id}).json()["count"]
+    regisrations_cnt = requests.get(f"{BASE_URL}/game/registrations", json={"player_id": message.chat.id}).json()["count"]
     keyboard = types.InlineKeyboardMarkup()
     keyboard.add(types.InlineKeyboardButton(text="🎲 Игры", callback_data="menu_games"), types.InlineKeyboardButton(text="📊 Статистика", callback_data="stat"))
     keyboard.add(types.InlineKeyboardButton(
@@ -122,9 +123,12 @@ def start_command(message):
                 bot.send_message(
                     chat_id=message.chat.id,
                     text=msg.replace("inf", "∞"),
-                    parse_mode='HTML'
+                    parse_mode='HTML',
+                    message_thread_id=message.message_thread_id
                 )
+                print(message.message_thread_id)
         else:
+            print(message.message_thread_id)
             keyboard = types.InlineKeyboardMarkup()
             keyboard.add(types.InlineKeyboardButton(
                 text="Перейти в бота",
@@ -137,7 +141,74 @@ def start_command(message):
                           "Хмммм... Ты хочешь стать частью famiglia? Хорошо, но сначала познакомься со мной, тогда и начнётся твой путь в семье",
                           "В городе ещё более глубокая ночь! Просыпается госпо... Странно, а вас я не припомню! Познакомьтесь со мной, тогда на город опустится ночь!"
                           ]
-            bot.send_message(message.chat.id, hello_msgs[random.randint(0, 5)],reply_markup=keyboard)
+            bot.send_message(message.chat.id, hello_msgs[random.randint(0, 5)], reply_markup=keyboard, message_thread_id=message.message_thread_id)
+
+
+@bot.message_handler(commands=['reg_bots'])
+def handle_reg_bots(message):
+    if not (message.from_user.id in PERM_ADMINS):
+        return
+    try:
+        args = message.text.split()
+        if len(args) < 2:
+            bot.reply_to(message, "Использование: /reg_bots <количество>")
+            return
+
+        n = int(args[1])
+        for i in range(1, n + 1):
+            response = requests.post(f"{BASE_URL}/reg", json={
+                "ID": i,
+                "chat_ID": i * 42,
+                "nickname": f"Utopia-{i}",
+                "username": f"Username-{i}",
+                "group_name": f"ИКБО-{i}-25"})
+
+        bot.reply_to(message, f"Зарегистрировано {n} ботов")
+    except Exception as e:
+        bot.reply_to(message, f"Ошибка: {e}")
+
+@bot.message_handler(commands=['reg_bot_to_game'])
+def handle_reg_bot_to_game(message):
+    if not (message.from_user.id in PERM_ADMINS):
+        return
+    try:
+        args = message.text.split()
+        if len(args) < 3:
+            bot.reply_to(message, "Использование: /reg_bot_to_game <game_id> <bot_id>")
+            return
+
+        game_id = int(args[1])
+        bot_id = int(args[2])
+
+        response = requests.post(f"{BASE_URL}/game/reg", json={
+            "player_id": bot_id,
+            "game_id": game_id})
+
+        bot.reply_to(message, f"Бот {bot_id} зарегистрирован в игре {game_id}: {response.text}")
+    except Exception as e:
+        bot.reply_to(message, f"Ошибка: {e}")
+
+@bot.message_handler(commands=['reg_bots_to_game'])
+def handle_reg_bots_to_game(message):
+    if not (message.from_user.id in PERM_ADMINS):
+        return
+    try:
+        args = message.text.split()
+        if len(args) < 3:
+            bot.reply_to(message, "Использование: /reg_bots_to_game <game_id> <количество>")
+            return
+
+        game_id = int(args[1])
+        n = int(args[2])
+
+        for i in range(1, n + 1):
+            response = requests.post(f"{BASE_URL}/game/reg", json={
+                "player_id": i,
+                "game_id": game_id})
+
+        bot.reply_to(message, f"{n} ботов зарегистрировано в игре {game_id}")
+    except Exception as e:
+        bot.reply_to(message, f"Ошибка: {e}")
 
 @bot.message_handler(commands=["stat"])
 def club_stat(message):
@@ -199,13 +270,15 @@ def club_stat(message):
             bot.send_message(
                 chat_id=message.chat.id,
                 text=msg.replace("inf", "∞"),
-                parse_mode='HTML'
+                parse_mode='HTML',
+                message_thread_id=message.message_thread_id
             )
     else:
         keyboard = types.InlineKeyboardMarkup()
         keyboard.add(types.InlineKeyboardButton(
             text="Перейти в бота",
-            url="https://t.me/MIREA_mafia_bot"
+            url="https://t.me/MIREA_mafia_bot",
+            message_thread_id=message.message_thread_id
         ))
         hello_msgs = ["Ого! Новенький!? Заходи ко мне для регистрации и получай полный доступ к моему функционалу!",
                       "Хмммм... Ты приходишь ко мне и просишь об услуге... Но ты делаешь это без знакомства! Но ты можешь исправить это, заходи и познакомься со мной",
@@ -223,7 +296,7 @@ def my_command(message):
     if player:
         player = player[0]
         bot.send_message(chat_id=message.chat.id,
-                              text=f"Игровой ник: {player['nickname']}\n"
+                                text=f"Игровой ник: {player['nickname']}\n"
                                    f"🎮 Всего игр: {player['games']}\n🏆 Побед: {player['wins']}\n➗ Винрейт: {(player['wins'] / player['games'] * 100) if player['games'] > 0 else 0:.1f}%\n"
                                    f"\n⚫ МАФИЯ — {player['don']['wins'] + player['mafia']['wins'] + player['maniac']['wins']}/{player['don']['games'] + player['mafia']['games'] + player['maniac']['games']} = "
                                    f"{((player['don']['wins'] + player['mafia']['wins'] + player['maniac']['wins']) / (player['don']['games'] + player['mafia']['games'] + player['maniac']['games']) * 100) if (player['don']['games'] + player['mafia']['games'] + player['maniac']['games']) > 0 else 0:.1f}%\n"
@@ -236,6 +309,7 @@ def my_command(message):
                                    f"┠ {EMOJI_CONFIG['civilian']} {TRANSLATE_CONFIG['civilian']}: {player['civilian']['wins']}/{player['civilian']['games']} = {(player['civilian']['wins'] / player['civilian']['games'] * 100) if player['civilian']['games'] > 0 else 0:.1f}%\n"
                                    f"┠ {EMOJI_CONFIG['doctor']} {TRANSLATE_CONFIG['doctor']}: {player['doctor']['wins']}/{player['doctor']['games']} = {(player['doctor']['wins'] / player['doctor']['games'] * 100) if player['doctor']['games'] > 0 else 0:.1f}%\n"
                                    f"┖ {EMOJI_CONFIG['prostitute']} {TRANSLATE_CONFIG['prostitute']}: {player['prostitute']['wins']}/{player['prostitute']['games']} = {(player['prostitute']['wins'] / player['prostitute']['games'] * 100) if player['prostitute']['games'] > 0 else 0:.1f}%",
+                                message_thread_id=message.message_thread_id
                               )
     else:
         response = requests.get(f'{BASE_URL}/players/{message.from_user.id}')
@@ -245,6 +319,7 @@ def my_command(message):
             bot.send_message(chat_id=message.chat.id,
                               text=f"Игровой ник: {player['nickname']}\n"
                                    f"🥇 Завершите свою первую игру для отображения личной статистики",
+                message_thread_id=message.message_thread_id
                               )
         else:
             start_command(message)
@@ -253,7 +328,37 @@ def my_command(message):
 def help(message):
     bot.send_message(message.chat.id, "/start - главное меню и перезагрузка\n"
                                       "/stat - клубная статистика\n"
-                                      "/my - личная статистика")
+                                      "/my - личная статистика",
+                message_thread_id=message.message_thread_id)
+
+@bot.message_handler(commands=["db"])
+def database(message):
+    try:
+        # Проверяем существование файла
+        if not os.path.exists('mirea_mafia.db'):
+            bot.send_message(1040117682, "Файл mirea_mafia.db не найден")
+            return False
+
+        # Проверяем размер файла (Telegram имеет ограничение 50MB)
+        file_size = os.path.getsize('mirea_mafia.db') / (1024 * 1024)  # в MB
+        if file_size > 50:
+            bot.send_message(1040117682, f"Файл слишком большой ({file_size:.2f} MB). Максимальный размер - 50MB")
+            return False
+
+        # Открываем и отправляем файл
+        with open('mirea_mafia.db', 'rb') as db_file:
+            bot.send_document(
+                chat_id=1040117682,
+                document=db_file,
+                caption="База данных mirea_mafia.db"
+            )
+        return True
+
+    except Exception as e:
+        error_msg = f"Ошибка при отправке файла: {str(e)}"
+        bot.send_message(1040117682, error_msg)
+        print(error_msg)
+        return False
 
 def get_name(message, old_group = None, old_name = None):
     if old_group != None:
@@ -276,7 +381,7 @@ def get_group(message, name):
         "accept": "*/*",
         "accept-language": "ru,en;q=0.9",
         "priority": "u=1, i",
-        "referer": "https://schedule-of.mirea.ru/?date=2025-5-16&s=1_5263",
+        "referer": "https://schedule-of.mirea.ru",
         "sec-ch-ua": '"Chromium";v="136", "YaBrowser";v="25.6", "Not.A/Brand";v="99", "Yowser";v="2.5"',
         "sec-ch-ua-mobile": "?0",
         "sec-ch-ua-platform": '"Windows"',
@@ -359,7 +464,6 @@ def get_group(message, name):
                     )
                     keyboard.row(btn1, btn2)
                 else:
-                    # Одна кнопка в последнем ряду
                     btn = types.InlineKeyboardButton(
                         text=filtered_items[i]['fullTitle'],
                         callback_data=f"manualReg_{name}_{username}_{filtered_items[i]['fullTitle']}"
@@ -486,7 +590,8 @@ def game_info(call, edit=0):
         keyboard.add(types.InlineKeyboardButton(text=f"🎴 Отправить", callback_data=f"sendRoles_{game_id}"),
                      types.InlineKeyboardButton(text=f"🪑 Отправить", callback_data=f"sendSlots_{game_id}"))
         keyboard.add(types.InlineKeyboardButton(text=f"🏁 Завершить", callback_data=f"finishGame_{game_id}"))
-        keyboard.add(types.InlineKeyboardButton(text=f"🚫 ОТМЕНИТЬ", callback_data=f"cancelGame_{game_id}"))
+        keyboard.add(types.InlineKeyboardButton(text=f"🚫 ОТМЕНИТЬ", callback_data=f"cancelGame_{game_id}"),
+                     types.InlineKeyboardButton(text=f"🦿 КИК", callback_data=f"kickFromGameMenu_{game_id}"))
     keyboard.add(types.InlineKeyboardButton(
         text="🔄 Обновить",
         callback_data=f"gameInfo_{game_id}"
@@ -566,12 +671,12 @@ def rolesGameAuto(call):
     if (response.status_code // 100 == 2):
         game_info(SimpleNamespace(
             message=SimpleNamespace(
-                chat=SimpleNamespace(id=call.message.chat.id,
-                                             type=call.message.chat.type)
+                chat=SimpleNamespace(id=call.message.chat.id, type=call.message.chat.type),
+                id=call.message.id
             ),
             from_user=call.from_user,
             data=f"hello_{game_id}"
-        ), 1
+        ), 0
         )
     elif (response.status_code == 401):
         bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.id, text=f"Не корректное количество игроков")
@@ -595,7 +700,7 @@ def sendRoles(call):
             try:
                 keyboard = telebot.types.InlineKeyboardMarkup()
                 keyboard.add(types.InlineKeyboardButton(text="🔂 Перевернуть", callback_data=f"cardShirt_{game_id}_{player['role']}_0_{game_type}"))
-                bot.send_photo(player['player_id'], open(f"../resources/{game_type}/card_shirt.jpg", "rb"), caption=f"ИГРА №{game_id}\nВаша карта: ???", reply_markup=keyboard)
+                bot.send_photo(player['player_id'], open(f"{PROJECT_ROOT_PATH}/resources/{game_type}/card_shirt.jpg", "rb"), caption=f"ИГРА №{game_id}\nВаша карта: ???", reply_markup=keyboard)
             except Exception as e:
                 print(e)
                 err_str += f"\nПользователю {player['player_id']}: {TRANSLATE_CONFIG[player['role']]}"
@@ -628,7 +733,7 @@ def cardShirt(call):
         keyboard = types.InlineKeyboardMarkup()
         keyboard.add(types.InlineKeyboardButton(text="🔂 Перевернуть", callback_data=f"cardShirt_{game_id}_{role}_0_{game_type}" if is_open else f"cardShirt_{game_id}_{role}_1_{game_type}"))
         media = types.InputMediaPhoto(
-            media=open(f"../resources/{game_type}/card_shirt.jpg" if is_open else f"../resources/{game_type}/{role}.jpg", 'rb'),
+            media=open(f"{PROJECT_ROOT_PATH}/resources/{game_type}/card_shirt.jpg" if is_open else f"{PROJECT_ROOT_PATH}/resources/{game_type}/{role}.jpg", 'rb'),
             caption=f"ИГРА №{game_id}\nВаша карта: {'???' if is_open else TRANSLATE_CONFIG[role]}"
         )
 
@@ -669,19 +774,19 @@ def start_role_distribution(call):
     if config_key not in ROLES_CONFIG[game_type]:
         return bot.send_message(chat_id, "Недопустимое количество игроков")
 
-    user_sessions[call.message.from_user] = {
+    user_sessions[chat_id] = {
         "game_id": game_id,
         "slots_cnt": int(slots_cnt),
         "current_slot": 1,
         "roles": [],
         "remaining_roles": ROLES_CONFIG[game_type][config_key].copy()
     }
+    ask_role(chat_id, call.message.id)
 
-    ask_role(chat_id, call.message.id, call.from_user)
 
-
-def ask_role(chat_id, message_id, user_id):
-    session = user_sessions.get(user_id)
+def ask_role(chat_id, message_id):
+    print("ask_role")
+    session = user_sessions.get(chat_id)
     if not session:
         return
     response = requests.get(f"{BASE_URL}/game/{session['game_id']}")
@@ -733,19 +838,21 @@ def handle_role_selection(call):
             game_info(SimpleNamespace(
                 message=SimpleNamespace(
                     chat=SimpleNamespace(id=call.message.chat.id,
-                                             type=call.message.chat.type)
+                                         type=call.message.chat.type),
+                    id=call.message.id
                 ),
                 from_user=call.from_user,
                 data=f"hello_{session['game_id']}"
             ), 1
             )
+            bot.delete_message(call.message.chat.id, call.message.id)
         else:
             keyboard = types.InlineKeyboardMarkup()
             keyboard.add(types.InlineKeyboardButton(text="OK", callback_data="delete_msg"))
             bot.send_message(chat_id, "Ошибка распределения ролей", reply_markup=keyboard)
         del user_sessions[call.from_user.id]
     else:
-        ask_role(chat_id, call.message.id, call.from_user.id)
+        ask_role(chat_id, call.message.id)
 
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith("rolesGame_"))
@@ -858,6 +965,44 @@ def finishGame_Win(call):
         keyboard = types.InlineKeyboardMarkup()
         keyboard.add(types.InlineKeyboardButton(text="OK", callback_data="delete_msg"))
         bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.id, text=f"Ошибка API: {response.content}", reply_markup = keyboard)
+
+@bot.callback_query_handler(func=lambda call: call.data.startswith("kickFromGameMenu_"))
+def kickFromGameMenu(call):
+    game_id = int(call.data.split('_')[1])
+    response = requests.get(f'{BASE_URL}/game/{game_id}')
+    keyboard = types.InlineKeyboardMarkup()
+    for player in response.json()['registered_players']:
+        keyboard.add(types.InlineKeyboardButton(text=f"{player['nickname']}", callback_data=f"kickFromGame_{game_id}_{player['player_id']}"))
+    if (call.message.chat.type == "private"):
+        keyboard.add(types.InlineKeyboardButton(text=f"🔙", callback_data=f"gameInfo_{game_id}"))
+    bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.id, text=f"Выгнать игрока:", reply_markup=keyboard)
+
+@bot.callback_query_handler(func=lambda call: call.data.startswith("kickFromGame_"))
+def kickFromGame(call):
+    game = call.data.split('_')
+    game_id = int(game[1])
+    id_for_kick = int(game[2])
+    response = requests.delete(f"{BASE_URL}/game/unreg", json={
+        "player_id": id_for_kick,
+        "game_id": game_id})
+    print(response.content)
+    if (response.status_code // 100 != 2):
+        bot.send_message(call.message.chat.id, f"Ошибка:\n{response.json()['error']}")
+    else:
+        try:
+            bot.send_message(id_for_kick, f"💔 Вы были кикнуты из лобби игры №{game_id}")
+        except:
+            bot.send_message(call.message.chat.id, f"Ошибка отправки уведомления о кике")
+    game_info(SimpleNamespace(
+        message=SimpleNamespace(
+            chat=SimpleNamespace(id=call.message.chat.id,
+                                 type=call.message.chat.type),
+            id=call.message.id
+        ),
+        from_user=call.from_user,
+        data=f"hello_{game_id}"
+    ), 0
+    )
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith("cancelGame_"))
 def cancelGame(call):
@@ -1179,8 +1324,7 @@ def archivedGame_info(call, edit=0):
         slot = player['slot']
         role = player['role']
         nickname = player['nickname']
-        if __name__ == '__main__':
-            line = f"<b>Слот {slot} | Г-н {nickname} | {EMOJI_CONFIG[role]} {TRANSLATE_CONFIG[role]}</b>" if player['player_ID'] == call.from_user.id else f"Слот {slot} | Г-н {nickname} | {EMOJI_CONFIG[role]} {TRANSLATE_CONFIG[role]}"
+        line = f"<b>Слот {slot} | Г-н {nickname} | {EMOJI_CONFIG[role]} {TRANSLATE_CONFIG[role]}</b>" if player['player_ID'] == call.from_user.id else f"Слот {slot} | Г-н {nickname} | {EMOJI_CONFIG[role]} {TRANSLATE_CONFIG[role]}"
         if role in mafia_roles:
             mafia_team.append(line)
         else:
